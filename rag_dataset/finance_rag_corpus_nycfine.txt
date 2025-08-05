@@ -1,0 +1,266 @@
+=== policy_manual_v1_1 (policy, None, internal) ===
+NYC Fine Jewelry
+Finance & Accounting Policy Manual
+Effective: January 1, 2025   •   Version: 1.1
+
+Table of Contents
+1. Purpose & Scope
+2. Revenue Recognition Policy
+3. Inventory & Cost of Goods Sold (COGS)
+4. Capital Expenditure & Depreciation
+5. Budgeting & Forecasting Guidelines
+6. Variance Analysis & Management Commentary
+7. Expense & Procurement Policy
+8. Internal Controls & Compliance
+9. Key Performance Indicators (KPIs)
+10. Cash Management & Cash‑Flow Policy
+11. Appendices
+
+1. Purpose & Scope
+This manual establishes the finance and accounting policies applicable to NYC Fine Jewelry (“the Company”), a small jewelry design and retail business. It governs the preparation of monthly actual and forecast financial statements covering the fiscal year 2025, beginning January 1, 2025 through December 31, 2025. These policies align with US GAAP and are designed for timely management reporting, decision-making, and audit readiness.
+
+2. Revenue Recognition Policy
+• The Company recognizes revenue from product sales when control transfers to the customer, typically upon shipment (FOB shipping point) or in-store pickup.
+• Revenue is measured net of returns, allowances, and sales taxes.
+• Gift card breakage revenue is recognized when probability of redemption becomes remote, estimated at 24 months of inactivity.
+• Cut-off: Shipments dispatched or picked up on or before the last calendar day of the month belong to that period’s revenue.
+
+3. Inventory & Cost of Goods Sold (COGS)
+• Inventory valuation method: First-In, First-Out (FIFO).
+• Inventory categories: Raw Materials, Work-in-Progress (WIP), Finished Goods.
+• COGS includes direct materials, direct labor, and manufacturing overhead allocated on a standard-cost basis.
+• Physical inventory counts are performed semi-annually (June & December).
+• Obsolete/slow-moving stock provision: Write-down triggered when an item’s turnover exceeds 270 days.
+
+4. Capital Expenditure & Depreciation
+• Capitalization threshold: Assets > USD 2,000 with useful life ≥ 12 months are capitalized and depreciated. 
+• Depreciation method: Straight-line.
+• Useful lives:
+- Computer & IT equipment: 3 years
+- Display cases & leasehold improvements: 5 years
+- Manufacturing equipment: 7 years
+• Repairs & maintenance below the capex threshold are expensed as incurred.
+
+5. Budgeting & Forecasting Guidelines
+• Forecasts are updated quarterly; monthly phasing follows historical seasonality unless otherwise justified. 
+• Variance trigger thresholds:
+- Revenue: ±5% or ±USD 5,000 (whichever is higher)
+- Gross Margin %: ±1.0 ppt
+- Operating Expense (OPEX) lines: ±10% or ±USD 2,000
+• Forecast versions are stored in the “Forecasts” schema of the finance database (table name pattern: forecast_YYYY_MM).
+
+6. Variance Analysis & Management Commentary
+• For each month-end close, the Controller must prepare and/or approve a variance report comparing Actual vs. Forecast for Income Statement lines.
+• Variances exceeding the thresholds in Section 5 require a written explanation citing root cause, action plan, and expected timeline for resolution.
+• The explanation should reference relevant policies (e.g., capitalization rules when depreciation shifts).
+• The Variance Insight Assistant (RAG system) is authorized to query policy text to assist in drafting commentary.
+
+7. Expense & Procurement Policy
+• Purchase Orders (PO) are required for all supplier purchases > USD 1,000.
+• Spending limits:
+- CEO: up to USD 50,000 per PO
+- Controller: up to USD 10,000 per PO
+- Department Heads: up to USD 3,000 per PO
+• Corporate credit card usage must be reconciled within 5 business days of statement close. 
+• Travel & Entertainment (T&E;) per-diem: USD 75 domestic; USD 100 international.
+
+8. Internal Controls & Compliance
+• Segregation of duties: No individual may approve and pay a supplier invoice.
+• Bank reconciliations performed monthly within 10 business days of month-end. 
+• Quarterly review of user access to accounting systems.
+
+9. Key Performance Indicators (KPIs)
+The Company tracks the KPIs below each month. Formulas assume line‑items from the Income Statement and Balance Sheet tables contained in nycfine_FS.xlsx.
+
+| KPI | Definition / Formula | Target |
+|-----|----------------------|--------|
+| **Gross Margin %** | (Sales – COGS) ÷ Sales | ≥ 60 % |
+| **Operating Expense Ratio** | Total OPEX ÷ Sales | ≤ 25 % |
+| **EBITDA** | Operating Income + Depreciation + Amortization | Growth > 10 % YoY |
+| **Inventory Turnover** | COGS ÷ Avg. Inventory | ≥ 4× annually |
+| **Days Sales Outstanding (DSO)** | (AR ÷ Sales) × 30 | ≤ 30 days |
+| **Days Payables Outstanding (DPO)** | (AP ÷ COGS) × 30 | ≥ 25 days |
+| **Cash Conversion Cycle (CCC)** | DSO + Days Inventory Outstanding – DPO | ≤ 40 days |
+| **Quick Ratio** | (Cash + AR) ÷ Current Liabilities | ≥ 1.0 |
+| **Current Ratio** | Current Assets ÷ Current Liabilities | ≥ 1.5 |
+| **Net Profit Margin** | Net Income ÷ Sales | ≥ 10 % |
+
+10. Cash Management & Cash‑Flow Policy
+• **Cash Forecasting** – 13‑week rolling forecast updated every Monday before 12 PM.  
+• **Minimum Reserve** – Maintain a cash balance ≥ USD 75 000 (≈ 2 months fixed OPEX).  
+• **Disbursement Schedule** – Supplier payments batched every Friday; emergency runs require CFO sign‑off.  
+• **Short‑Term Investments** – Excess cash may be swept nightly into a high‑yield treasury fund; instruments must mature ≤ 90 days and be rated A‑1/P‑1.  
+• **Borrowing Facility** – Revolving line of credit capped at USD 250 000; drawdowns limited to working‑capital gaps with repayment within 60 days.  
+• **Variance Triggers** – If actual ending cash falls 10 % below forecast two weeks in a row, Controller must prepare a liquidity action plan.  
+• **Segregation of Duties** – Treasury Analyst prepares forecasts; Controller reviews; CFO approves; CEO notified for draws > USD 100 000.
+
+11. Appendices
+A. Account Mapping: (Summarized list aligning Income Statement line items with chart of accounts codes used in nycfine_FS.xlsx)
+- 4000 Sales Revenue
+- 5000 Cost of Goods Sold
+- 6100 Rent Expense
+- 6200 Marketing Expense
+- 6300 Salaries & Wages
+- 7000 Depreciation Expense
+
+B. Variance Commentary Template (unchanged)
+
+=== forecast_assumptions_Q3_2025 (forecast_assumption, 2025-Q3, internal) ===
+NYC Fine Jewelry – Forecast Assumptions, Q3 2025
+------------------------------------------------
+Revenue:
+• 12 % QoQ growth driven by launch of the “Halo” diamond collection (July 15).
+• Conversion rate improvement on Shopify store from 1.8 % to 2.2 % after UX revamp.
+• Average selling price (ASP) expected to stay flat at USD 1 250.
+
+COGS:
+• Raw‑diamond supplier negotiated 3 % discount effective August 1.
+• Labour efficiency gains to keep manufacturing overhead flat despite volume uptick.
+
+OPEX:
+• Marketing spend front‑loaded in July (USD 30 k) for launch campaign.
+• Two incremental hires in Customer Success starting September (annual TC USD 50 k each).
+
+Capital Expenditure:
+• Laser‑engraving machine (USD 18 k) to be installed August; depreciated over 7 years.
+
+Cash & Liquidity:
+• Minimum reserve of USD 75 k to be maintained as per policy v1.1.
+
+=== mgmt_commentary_2025-01 (management_commentary, 2025-01, internal) ===
+Management Commentary – January 2025 Close
+--------------------------------------
+**Key Variance Drivers**
+
+• Revenue variance: ‑5 % vs Forecast – slower retail foot traffic.
+• Gross Margin variance: ‑4 ppt – mix shift toward higher‑margin pieces.
+• OPEX variance: +12 % – timing of marketing spend vs plan.
+
+**Action Items**
+
+1. Adjust next month’s forecast to reflect updated run‑rate.
+2. Re‑order fast‑moving SKUs to avoid stock‑outs.
+3. Monitor gold price weekly; consider hedging if volatility persists.
+
+=== mgmt_commentary_2025-02 (management_commentary, 2025-02, internal) ===
+Management Commentary – February 2025 Close
+--------------------------------------
+**Key Variance Drivers**
+
+• Revenue variance: ‑7 % vs Forecast – Instagram influencer campaign outperformed expectations.
+• Gross Margin variance: +4 ppt – mix shift toward higher‑margin pieces.
+• OPEX variance: ‑15 % – timing of marketing spend vs plan.
+
+**Action Items**
+
+1. Adjust next month’s forecast to reflect updated run‑rate.
+2. Re‑order fast‑moving SKUs to avoid stock‑outs.
+3. Monitor gold price weekly; consider hedging if volatility persists.
+
+=== mgmt_commentary_2025-03 (management_commentary, 2025-03, internal) ===
+Management Commentary – March 2025 Close
+--------------------------------------
+**Key Variance Drivers**
+
+• Revenue variance: ‑5 % vs Forecast – foreign‑exchange tailwind on EUR purchases.
+• Gross Margin variance: ‑3 ppt – mix shift toward higher‑margin pieces.
+• OPEX variance: ‑8 % – timing of marketing spend vs plan.
+
+**Action Items**
+
+1. Adjust next month’s forecast to reflect updated run‑rate.
+2. Re‑order fast‑moving SKUs to avoid stock‑outs.
+3. Monitor gold price weekly; consider hedging if volatility persists.
+
+=== mgmt_commentary_2025-04 (management_commentary, 2025-04, internal) ===
+Management Commentary – April 2025 Close
+--------------------------------------
+**Key Variance Drivers**
+
+• Revenue variance: ‑9 % vs Forecast – bulk order from corporate gifting client.
+• Gross Margin variance: +3 ppt – mix shift toward higher‑margin pieces.
+• OPEX variance: ‑11 % – timing of marketing spend vs plan.
+
+**Action Items**
+
+1. Adjust next month’s forecast to reflect updated run‑rate.
+2. Re‑order fast‑moving SKUs to avoid stock‑outs.
+3. Monitor gold price weekly; consider hedging if volatility persists.
+
+=== mgmt_commentary_2025-05 (management_commentary, 2025-05, internal) ===
+Management Commentary – May 2025 Close
+--------------------------------------
+**Key Variance Drivers**
+
+• Revenue variance: ‑4 % vs Forecast – production delay due to equipment maintenance.
+• Gross Margin variance: ‑2 ppt – mix shift toward higher‑margin pieces.
+• OPEX variance: ‑9 % – timing of marketing spend vs plan.
+
+**Action Items**
+
+1. Adjust next month’s forecast to reflect updated run‑rate.
+2. Re‑order fast‑moving SKUs to avoid stock‑outs.
+3. Monitor gold price weekly; consider hedging if volatility persists.
+
+=== mgmt_commentary_2025-06 (management_commentary, 2025-06, internal) ===
+Management Commentary – June 2025 Close
+--------------------------------------
+**Key Variance Drivers**
+
+• Revenue variance: ‑8 % vs Forecast – Gold price spike compressed gross margin.
+• Gross Margin variance: ‑4 ppt – mix shift toward higher‑margin pieces.
+• OPEX variance: ‑6 % – timing of marketing spend vs plan.
+
+**Action Items**
+
+1. Adjust next month’s forecast to reflect updated run‑rate.
+2. Re‑order fast‑moving SKUs to avoid stock‑outs.
+3. Monitor gold price weekly; consider hedging if volatility persists.
+
+=== mgmt_commentary_2025-07 (management_commentary, 2025-07, internal) ===
+Management Commentary – July 2025 Close
+--------------------------------------
+**Key Variance Drivers**
+
+• Revenue variance: ‑6 % vs Forecast – post‑launch halo collection stock‑outs.
+• Gross Margin variance: +3 ppt – mix shift toward higher‑margin pieces.
+• OPEX variance: +5 % – timing of marketing spend vs plan.
+
+**Action Items**
+
+1. Adjust next month’s forecast to reflect updated run‑rate.
+2. Re‑order fast‑moving SKUs to avoid stock‑outs.
+3. Monitor gold price weekly; consider hedging if volatility persists.
+
+=== slack_thread_marketing_overspend_May2025 (slack_thread, 2025-05, internal_slack) ===
+#finance / May 15 2025 10:12
+@alice (Marketing Lead): “Team, May marketing spend is tracking USD 4 k over budget due to IG ads CPM doubling overnight. Should we pull back?”
+@ben (Controller): “Please share the campaign report; we need context for the variance commentary.”
+@alice: “Report uploaded here → /drive/marketing/may2025_ig_campaign.pdf”
+@carla (CEO): “If ROAS > 3 × keep running; else cap spend at budget +5 %.”
+
+=== board_deck_slide7_Q2_2025 (board_deck, 2025-Q2, board_presentation) ===
+Board Update Deck – Slide 7
+---------------------------
+Title: Q2 2025 Financial Highlights
+
+• Revenue USD 350 k (+15 % QoQ, +35 % YoY)
+• EBITDA USD 42 k (margin 12 %)
+• Cash balance USD 112 k (above 2‑month reserve)
+• CCC improved to 38 days vs 44 days in Q1
+• Halo collection pre‑orders: 480 units, launch July 15
+
+=== kpi_dashboard_2025-07 (kpi_dashboard, 2025-07, bi_tool_export) ===
+Month,Sales,COGS,GrossMargin%,OPEX,EBITDA,Cash,DSO,DPO,CCC
+2025-07,420000,165000,60.7,98000,54000,118000,29,27,39
+
+=== gl_detail_opex_2025-07 (gl_detail, 2025-07, accounting_system) ===
+GL Detail – July 2025 Operating Expenses
+---------------------------------------
+Date,Account,Vendor,Description,Amount
+2025-07-03,6200 Marketing,Meta Platforms,Instagram ads (Halo launch),7 200
+2025-07-05,6300 Salaries,Payroll,Weekly wages,12 400
+2025-07-12,6100 Rent,Midtown Realty,July lease,8 000
+2025-07-18,6200 Marketing,Google,YouTube pre‑roll ads,3 300
+2025-07-25,6200 Marketing,TikTok,TikTok creator collab,4 100
+

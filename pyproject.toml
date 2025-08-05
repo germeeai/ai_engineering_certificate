@@ -1,0 +1,41 @@
+[project]
+name = "aie7-certification"
+version = "0.1.0"
+description = "Get some insights about variances"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "cohere>=5.12.0,<5.13.0",
+    "fastapi>=0.115.0",
+    "ipykernel>=6.30.0",
+    "jupyter>=1.1.1",
+    "langchain>=0.3.14",
+    "langchain-cohere==0.4.5",
+    "langchain-community>=0.3.14",
+    "langchain-experimental>=0.3",
+    "langchain-openai>=0.3.0",
+    "langchain-qdrant>=0.2.0",
+    "langgraph>=0.3.0",
+    "nltk==3.8.1",
+    "openai>=1.98.0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.1",
+    "pymupdf>=1.26,<2",
+    "pyppeteer>=2.0.0",
+    "python-dotenv>=1.1.1",
+    "qdrant-client>=1.15,<2",
+    "ragas==0.2.10",
+    "rapidfuzz>=3.0,<4",
+    "sentence-transformers>=5.0.0",
+    "sqlalchemy[asyncio]>=2.0.42",
+    "tavily-python>=0.7.9",
+    "uvicorn>=0.34.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "pytest>=8.4.1",
+    "ruff>=0.12.7",
+]
