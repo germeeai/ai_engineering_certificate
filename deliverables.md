@@ -32,10 +32,10 @@ Can I afford to hire a social media person next month for the coming 3 months?
 Did my business do well last month?
 Are my costs high or low compared to industry peers?
 
-1 — Proposed solution (≤ 3 sentences)
+1 — Proposed solution
 A chat box with financial insights sits in the finance portal: the business owners asks “How was my performance in May 2025?” and instantly sees a cited explanation plus a drill-down table. The system pulls numbers from Postgres, retrieves policy or commentary snippets from a tiny vector store, and the LLM stitches them into plain-English answers.
 
-2 — Stack & tooling (≤ 3 sentences)
+2 — Stack & tooling
 Stack: 
 LLM - GPT-4.1
 Embedding model - text-embedding-3-small (low-cost vectors)
@@ -48,7 +48,7 @@ Serving and inference - FastAPI on Railway (zero-cost deploy)
 Each pick offers a free tier or rock-bottom pricing and has good docs, letting a small team ship fast without DevOps overhead.
 
 
-3 — Agents & agentic reasoning (≤ 3 sentences)
+3 — Agents & agentic reasoning
 A Router Agent decides if a query needs RAG or search.  The router inspects the user’s intent and content requirements.  If the question can be answered with fresh web facts it forwards to a search tool, but if it needs domain-specific knowledge, it triggers the RAG pipeline to retrieve and ground the LLM in your private corpus. This keeps responses both cost-efficient and contextually accurate by only invoking retrieval when necessary.
 
 
@@ -101,11 +101,15 @@ Entity coverage - Semantic Retriever shows the biggest jump in context-entity re
 Robustness to noise - both Contextual Compression and Parent-Document nearly halve noise-sensitivity, indicating stronger filtering of irrelevant chunks.
 Trade-offs - Multi-query raises entity recall but hurts faithfulness and noise-sensitivity; the Ensemble variant narrows recall for entities, suggesting score fusion needs retuning.
 
-Overall, swapping the baseline for fine-tuned embeddings plus contextual-compression retrieval delivers the best all-round boost—higher factual grounding and lower hallucination risk at virtually no cost to latency or relevance.
+Overall, swapping the baseline for fine-tuned embeddings plus contextual-compression retrieval delivers the best all-round boost—higher factual grounding and lower hallucination risk at virtually no cost to latency or relevance.  All the metrics improved compared to the baseline.
 
 Contextual compression tops or ties every key metric that matters—highest factual-correctness 
 (0.492 vs ≤ 0.455 for others), highest faithfulness except the semantic variant, and the lowest noise-sensitivity (0.346)—while keeping answer-relevancy and entity recall solid, so it improves accuracy and robustness simultaneously without the trade-offs seen in the other strategies.
 
-Would like to make the app end-to-end from ingestion of excel files to making computations, and then analysis.  This will be incorporated into RAG.
+![Naive rag](ragas/1naive.png)
+![Contextual compression rag](ragas/3contextualcompression.png)
 
-I would also like to automate nightly RAGAS regression in LangSmith; alert on > 3 pp drop in factual-correctness.
+
+Would like to make the app end-to-end from ingestion of excel files to making computations, and then an AI-generated analysis.  This AI-generated analysis will then be used as a RAG implementation to be used by business leaders as an easy-access tool to monitor company performance.
+
+I would also like to automate RAGAS evaluation and make improvements automatically.
