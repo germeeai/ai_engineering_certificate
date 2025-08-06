@@ -1,6 +1,8 @@
 import os
 import functools
 import operator
+import logging
+import time
 from typing import Annotated, List, Union, TypedDict
 from uuid import uuid4
 
@@ -27,6 +29,17 @@ from langchain.retrievers.contextual_compression import ContextualCompressionRet
 from langchain_cohere import CohereRerank
 from langchain_core.tools import tool
 import nest_asyncio
+
+# Logging Configuration
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Configuration
 class Config:
@@ -60,6 +73,54 @@ rag_graph = None
 # FastAPI app
 app = FastAPI(title="AIE7 Certification RAG API", version="1.0.0")
 
+# Request/Response Logging Middleware
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    start_time = time.time()
+    
+    # Log incoming request
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    logger.debug(f"Request headers: {dict(request.headers)}")
+    
+    # Log request body for POST requests (be careful with sensitive data)
+    if request.method == "POST":
+        try:
+            # Read the body
+            body = await request.body()
+            if body:
+                # Try to decode as JSON for logging
+                try:
+                    import json
+                    body_json = json.loads(body.decode())
+                    logger.debug(f"Request body: {body_json}")
+                except:
+                    logger.debug(f"Request body (raw): {body[:500]}...")  # Limit to first 500 chars
+            
+            # Create a new request with the same body for the endpoint
+            from fastapi import Request
+            from starlette.requests import Request as StarletteRequest
+            
+            async def receive():
+                return {"type": "http.request", "body": body}
+            
+            # Recreate request with body
+            request = Request(request.scope, receive)
+            
+        except Exception as e:
+            logger.warning(f"Could not log request body: {e}")
+    
+    # Process request
+    response = await call_next(request)
+    
+    # Calculate processing time
+    process_time = time.time() - start_time
+    
+    # Log response
+    logger.info(f"Response: {response.status_code} - Processing time: {process_time:.4f}s")
+    response.headers["X-Process-Time"] = str(process_time)
+    
+    return response
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -71,11 +132,17 @@ app.add_middleware(
 
 def setup_environment(openai_key: str, tavily_key: str, cohere_key: str = None):
     """Setup environment variables with API keys from request"""
+    logger.info("Setting up environment variables")
+    logger.debug(f"OpenAI key provided: {'Yes' if openai_key else 'No'}")
+    logger.debug(f"Tavily key provided: {'Yes' if tavily_key else 'No'}")
+    logger.debug(f"Cohere key provided: {'Yes' if cohere_key else 'No'}")
+    
     # For debugging with test keys, disable tracing to avoid auth errors
     if openai_key == "test-key":
-        print("DEBUG: Using test keys - disabling LangSmith tracing")
+        logger.warning("Using test keys - disabling LangSmith tracing")
         os.environ["LANGCHAIN_TRACING_V2"] = "false"
     else:
+        logger.debug("Setting up LangSmith tracing")
         os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
     
     os.environ["OPENAI_API_KEY"] = openai_key
@@ -83,10 +150,15 @@ def setup_environment(openai_key: str, tavily_key: str, cohere_key: str = None):
     if cohere_key:
         os.environ["COHERE_API_KEY"] = cohere_key
     else:
+        logger.warning("No Cohere key provided, using default")
         os.environ["COHERE_API_KEY"] = "default-cohere-key"  # Provide default
     
-    os.environ.setdefault("LANGCHAIN_PROJECT", f"AIE7-cert-{uuid4().hex[:8]}")
+    project_name = f"AIE7-cert-{uuid4().hex[:8]}"
+    os.environ.setdefault("LANGCHAIN_PROJECT", project_name)
+    logger.info(f"LangChain project set to: {project_name}")
+    
     nest_asyncio.apply()
+    logger.debug("Nest asyncio applied")
 
 def tiktoken_len(text: str) -> int:
     """Calculate token length using tiktoken"""
@@ -95,32 +167,55 @@ def tiktoken_len(text: str) -> int:
 
 def load_and_chunk_documents():
     """Load and chunk PDF documents from data directory"""
-    directory_loader = DirectoryLoader(
-        Config.DATA_DIR, 
-        glob=Config.PDF_GLOB, 
-        loader_cls=PyMuPDFLoader
-    )
-    finance_resources = directory_loader.load()
+    logger.info(f"Loading documents from: {Config.DATA_DIR}")
     
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=Config.CHUNK_SIZE,
-        chunk_overlap=Config.CHUNK_OVERLAP,
-        length_function=tiktoken_len,
-    )
-    
-    return text_splitter.split_documents(finance_resources)
+    try:
+        directory_loader = DirectoryLoader(
+            Config.DATA_DIR, 
+            glob=Config.PDF_GLOB, 
+            loader_cls=PyMuPDFLoader
+        )
+        finance_resources = directory_loader.load()
+        logger.info(f"Loaded {len(finance_resources)} documents")
+        
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=Config.CHUNK_SIZE,
+            chunk_overlap=Config.CHUNK_OVERLAP,
+            length_function=tiktoken_len,
+        )
+        
+        chunks = text_splitter.split_documents(finance_resources)
+        logger.info(f"Split documents into {len(chunks)} chunks")
+        
+        return chunks
+        
+    except Exception as e:
+        logger.error(f"Error loading documents: {str(e)}", exc_info=True)
+        raise
 
 def create_vectorstore(documents):
     """Create Qdrant vectorstore from documents"""
-    embedding_model = OpenAIEmbeddings(model=Config.EMBEDDING_MODEL)
+    logger.info(f"Creating vectorstore with {len(documents)} documents")
     
-    qdrant_vectorstore = Qdrant.from_documents(
-        documents=documents,
-        embedding=embedding_model,
-        location=":memory:"
-    )
-    
-    return qdrant_vectorstore.as_retriever()
+    try:
+        embedding_model = OpenAIEmbeddings(model=Config.EMBEDDING_MODEL)
+        logger.debug(f"Using embedding model: {Config.EMBEDDING_MODEL}")
+        
+        qdrant_vectorstore = Qdrant.from_documents(
+            documents=documents,
+            embedding=embedding_model,
+            location=":memory:"
+        )
+        logger.info("Vectorstore created successfully")
+        
+        retriever = qdrant_vectorstore.as_retriever()
+        logger.debug("Retriever created from vectorstore")
+        
+        return retriever
+        
+    except Exception as e:
+        logger.error(f"Error creating vectorstore: {str(e)}", exc_info=True)
+        raise
 
 def create_rag_graph(retriever):
     """Create RAG graph for basic retrieval and generation"""
@@ -265,10 +360,19 @@ Use the provide context to answer the provided user query. Only use the provided
     @tool
     def retrieve_information(query: Annotated[str, "query to ask the retrieve information tool"]):
         """Use Retrieval Augmented Generation to retrieve information about finance policies and variances"""
-        print(f"DEBUG: retrieve_information called with query: {query}")
-        result = contextual_compression_retrieval_chain.invoke({"question": query})
-        print(f"DEBUG: retrieve_information result: {result}")
-        return result
+        logger.debug(f"retrieve_information called with query: {query}")
+        start_time = time.time()
+        
+        try:
+            result = contextual_compression_retrieval_chain.invoke({"question": query})
+            processing_time = time.time() - start_time
+            logger.debug(f"retrieve_information completed in {processing_time:.4f}s")
+            logger.debug(f"retrieve_information result: {result}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in retrieve_information: {str(e)}", exc_info=True)
+            raise
     
     # State definition
     class ResearchTeamState(TypedDict):
@@ -328,35 +432,120 @@ def initialize_system(openai_key: str, tavily_key: str, cohere_key: str = None):
     """Initialize the entire RAG system"""
     global compiled_research_graph, rag_graph
     
-    setup_environment(openai_key, tavily_key, cohere_key)
+    logger.info("Starting system initialization")
+    start_time = time.time()
     
-    # Load and process documents
-    documents = load_and_chunk_documents()
-    retriever = create_vectorstore(documents)
-    
-    # Create RAG graph
-    rag_graph = create_rag_graph(retriever)
-    
-    # Create research graph
-    compiled_research_graph = create_research_graph(retriever)
+    try:
+        setup_environment(openai_key, tavily_key, cohere_key)
+        
+        # Load and process documents
+        logger.info("Loading and processing documents")
+        doc_start = time.time()
+        documents = load_and_chunk_documents()
+        logger.info(f"Document processing completed in {time.time() - doc_start:.2f}s")
+        
+        # Create vectorstore
+        logger.info("Creating vectorstore")
+        vector_start = time.time()
+        retriever = create_vectorstore(documents)
+        logger.info(f"Vectorstore creation completed in {time.time() - vector_start:.2f}s")
+        
+        # Create RAG graph
+        logger.info("Creating RAG graph")
+        rag_start = time.time()
+        rag_graph = create_rag_graph(retriever)
+        logger.info(f"RAG graph creation completed in {time.time() - rag_start:.2f}s")
+        
+        # Create research graph
+        logger.info("Creating research graph")
+        research_start = time.time()
+        compiled_research_graph = create_research_graph(retriever)
+        logger.info(f"Research graph creation completed in {time.time() - research_start:.2f}s")
+        
+        total_time = time.time() - start_time
+        logger.info(f"System initialization completed successfully in {total_time:.2f}s")
+        
+    except Exception as e:
+        logger.error(f"System initialization failed: {str(e)}", exc_info=True)
+        raise
 
 # API Endpoints
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
+    logger.debug("Health check requested")
+    
+    system_status = "healthy" if compiled_research_graph is not None else "not_initialized"
+    message = "AIE7 Certification RAG API is running"
+    
+    if system_status == "not_initialized":
+        message += " (System not yet initialized - awaiting first prediction request)"
+    
+    logger.debug(f"Health check response: {system_status}")
+    
     return HealthResponse(
-        status="healthy",
-        message="AIE7 Certification RAG API is running"
+        status=system_status,
+        message=message
     )
 
 
 @app.post("/test", response_model=PredictResponse)
 async def test_endpoint(request: PredictRequest):
     """Test endpoint that works without API keys"""
-    return PredictResponse(
+    logger.info(f"Test endpoint called with question: {request.question}")
+    
+    response = PredictResponse(
         response=f"Test response received: {request.question}",
         context=["This is a test response that doesn't require API keys"]
     )
+    
+    logger.debug(f"Test endpoint returning: {response}")
+    return response
+
+
+@app.post("/debug", response_model=PredictResponse)
+async def debug_endpoint(request: PredictRequest):
+    """Debug endpoint to test system state"""
+    logger.info(f"Debug endpoint called with question: {request.question}")
+    
+    try:
+        # Check environment variables
+        openai_key = os.environ.get("OPENAI_API_KEY", "Not set")
+        tavily_key = os.environ.get("TAVILY_API_KEY", "Not set") 
+        cohere_key = os.environ.get("COHERE_API_KEY", "Not set")
+        
+        logger.debug(f"Environment - OpenAI: {'Set' if openai_key != 'Not set' else 'Not set'}")
+        logger.debug(f"Environment - Tavily: {'Set' if tavily_key != 'Not set' else 'Not set'}")
+        logger.debug(f"Environment - Cohere: {'Set' if cohere_key != 'Not set' else 'Not set'}")
+        
+        # Check global variables
+        logger.debug(f"Global state - compiled_research_graph: {'initialized' if compiled_research_graph else 'None'}")
+        logger.debug(f"Global state - rag_graph: {'initialized' if rag_graph else 'None'}")
+        
+        # Check if data directory exists
+        import os
+        data_dir_exists = os.path.exists(Config.DATA_DIR)
+        logger.debug(f"Data directory '{Config.DATA_DIR}' exists: {data_dir_exists}")
+        
+        if data_dir_exists:
+            pdf_files = []
+            for _, _, files in os.walk(Config.DATA_DIR):
+                pdf_files.extend([f for f in files if f.endswith('.pdf')])
+            logger.debug(f"Found {len(pdf_files)} PDF files: {pdf_files}")
+        
+        response_text = f"Debug info logged. System state: compiled_research_graph={'initialized' if compiled_research_graph else 'None'}, data_dir_exists={data_dir_exists}"
+        
+        response = PredictResponse(
+            response=response_text,
+            context=[f"Debug response for: {request.question}"]
+        )
+        
+        logger.debug(f"Debug endpoint returning: {response}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Debug endpoint error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Debug endpoint failed: {str(e)}")
 
 
 @app.post("/predict", response_model=PredictResponse)
@@ -367,42 +556,58 @@ async def predict(
     x_cohere_key: str = Header(None, alias="X-Cohere-Key")
 ):
     """Main prediction endpoint"""
+    logger.info(f"Prediction request received for question: {request.question}")
+    prediction_start = time.time()
+    
     try:
         # Initialize system with API keys from headers if not already initialized
         if compiled_research_graph is None:
+            logger.info("System not initialized, checking API keys")
             if not x_openai_key or not x_tavily_key:
+                logger.error("Missing required API keys")
                 raise HTTPException(
                     status_code=400,
                     detail="OpenAI and Tavily API keys are required in headers"
                 )
             
             try:
+                logger.info("Initializing system with provided API keys")
                 initialize_system(x_openai_key, x_tavily_key, x_cohere_key)
             except Exception as e:
+                logger.error(f"System initialization failed: {str(e)}", exc_info=True)
                 raise HTTPException(
                     status_code=500,
                     detail=f"Failed to initialize system: {str(e)}"
                 )
+        else:
+            logger.debug("System already initialized, proceeding with prediction")
         
         # Create research chain
+        logger.debug("Creating research chain")
         research_chain = enter_chain | compiled_research_graph
         
         # Process the question
         results = []
-        print(f"DEBUG: Processing question: {request.question}")
+        logger.info(f"Processing question through research chain: {request.question}")
+        processing_start = time.time()
+        
         for step in research_chain.stream(
             request.question, 
             {"recursion_limit": Config.RECURSION_LIMIT}
         ):
             if "__end__" not in step:
-                print(f"DEBUG: Step result: {step}")
+                logger.debug(f"Research chain step: {step}")
                 results.append(step)
+        
+        processing_time = time.time() - processing_start
+        logger.info(f"Research chain processing completed in {processing_time:.4f}s")
         
         # Extract final response
         final_response = "I don't know."
         context_info = []
         
         if results:
+            logger.debug("Extracting final response from results")
             # Get the last meaningful response
             for result in reversed(results):
                 for key, value in result.items():
@@ -410,20 +615,42 @@ async def predict(
                         messages = value["messages"]
                         if messages and hasattr(messages[0], 'content'):
                             final_response = messages[0].content
+                            logger.debug(f"Final response extracted: {final_response}")
                             break
                 if final_response != "I don't know.":
                     break
+        else:
+            logger.warning("No results returned from research chain")
+        
+        total_time = time.time() - prediction_start
+        logger.info(f"Prediction completed in {total_time:.4f}s")
         
         return PredictResponse(
             response=final_response,
             context=context_info
         )
         
+    except HTTPException as he:
+        # Log HTTP exceptions before re-raising
+        logger.error(f"HTTP Exception in predict: {he.status_code} - {he.detail}")
+        raise
     except Exception as e:
         import traceback
-        error_details = f"Prediction failed: {str(e)}\nTraceback: {traceback.format_exc()}"
-        print(f"ERROR: {error_details}")  # Log to console
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        error_type = type(e).__name__
+        error_message = str(e)
+        full_traceback = traceback.format_exc()
+        
+        # Log detailed error information
+        logger.error(f"Prediction failed with {error_type}: {error_message}")
+        logger.error(f"Full traceback:\n{full_traceback}")
+        
+        # Also log the state of global variables for debugging
+        logger.error(f"System state - compiled_research_graph: {'initialized' if compiled_research_graph else 'None'}")
+        logger.error(f"System state - rag_graph: {'initialized' if rag_graph else 'None'}")
+        
+        # Return detailed error message
+        detailed_error = f"{error_type}: {error_message}"
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {detailed_error}")
 
 # Initialize system on startup - removed as we'll initialize on first request
 # @app.on_event("startup")
@@ -433,6 +660,8 @@ async def predict(
 
 if __name__ == "__main__":
     import uvicorn
+    logger.info("Starting FastAPI server")
+    logger.info("Debug logging enabled - check app.log for detailed logs")
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 requirements = [

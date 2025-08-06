@@ -1,4 +1,9 @@
 Loom video
+
+Problem + demo
+https://www.loom.com/share/74d2ba40365e4533b5b925c71bdb2f7c
+
+Problem + code walkthrough
 https://www.loom.com/share/8b101f55a6e3472388dd7bbbd052f8cb?sid=b1d44892-7db3-4150-8178-73a88afb297d
 https://www.loom.com/share/475b30deb292475a9be8289781819a2a?sid=ed167750-b462-45b8-ab53-e43bb286765a
 
