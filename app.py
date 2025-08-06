@@ -5,6 +5,10 @@ import logging
 import time
 from typing import Annotated, List, Union, TypedDict
 from uuid import uuid4
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 import tiktoken
 from fastapi import FastAPI, HTTPException, Header, Request
@@ -157,8 +161,14 @@ def setup_environment(openai_key: str, tavily_key: str, cohere_key: str = None):
     os.environ.setdefault("LANGCHAIN_PROJECT", project_name)
     logger.info(f"LangChain project set to: {project_name}")
     
-    nest_asyncio.apply()
-    logger.debug("Nest asyncio applied")
+    try:
+        nest_asyncio.apply()
+        logger.debug("Nest asyncio applied")
+    except ValueError as e:
+        if "Can't patch loop of type" in str(e):
+            logger.warning(f"Skipping nest_asyncio.apply() due to incompatible event loop: {e}")
+        else:
+            raise
 
 def tiktoken_len(text: str) -> int:
     """Calculate token length using tiktoken"""
@@ -523,7 +533,6 @@ async def debug_endpoint(request: PredictRequest):
         logger.debug(f"Global state - rag_graph: {'initialized' if rag_graph else 'None'}")
         
         # Check if data directory exists
-        import os
         data_dir_exists = os.path.exists(Config.DATA_DIR)
         logger.debug(f"Data directory '{Config.DATA_DIR}' exists: {data_dir_exists}")
         
@@ -560,19 +569,25 @@ async def predict(
     prediction_start = time.time()
     
     try:
-        # Initialize system with API keys from headers if not already initialized
+        # Initialize system with API keys from .env or headers if not already initialized
         if compiled_research_graph is None:
             logger.info("System not initialized, checking API keys")
-            if not x_openai_key or not x_tavily_key:
+            
+            # Use .env keys first, fallback to headers
+            openai_key = os.getenv("OPENAI_API_KEY") or x_openai_key
+            tavily_key = os.getenv("TAVILY_API_KEY") or x_tavily_key
+            cohere_key = os.getenv("COHERE_API_KEY") or x_cohere_key
+            
+            if not openai_key or not tavily_key:
                 logger.error("Missing required API keys")
                 raise HTTPException(
                     status_code=400,
-                    detail="OpenAI and Tavily API keys are required in headers"
+                    detail="OpenAI and Tavily API keys are required (set in .env file or headers)"
                 )
             
             try:
-                logger.info("Initializing system with provided API keys")
-                initialize_system(x_openai_key, x_tavily_key, x_cohere_key)
+                logger.info("Initializing system with API keys from .env file")
+                initialize_system(openai_key, tavily_key, cohere_key)
             except Exception as e:
                 logger.error(f"System initialization failed: {str(e)}", exc_info=True)
                 raise HTTPException(
